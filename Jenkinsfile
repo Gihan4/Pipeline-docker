@@ -24,7 +24,7 @@ pipeline {
         stage('Clone') {
             steps {
                 echo "Cloning repository..."
-                sh 'git clone https://github.com/Gihan4/DevOps-Crypto.git'
+                sh 'git clone https://github.com/Gihan4/Pipeline-docker.git'
                 sh 'ls'
             }
         }
@@ -32,33 +32,28 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo "Building Docker image..."
-                dir('your-repo') {
-                    sh 'docker build -t your-flask-image .'
+                dir('Pipeline-docker') {
+                    sh 'docker build -t gihan4/myimage:1.0 .'
                 }
             }
         }
 
-        stage('Upload to S3') {
+        stage('Push Image to Docker Hub') {
             steps {
-                echo "Copying to S3..."
-                sh 'aws s3 cp project.tar.gz s3://gihansbucket'
+                echo "Pushing Docker image to Docker Hub..."
+                sh 'docker push gihan4/myimage:1.0'
             }
         }
 
-        stage('Pull gzip from S3 and push to EC2') {
+        stage('Deploy and Test on AWS') {
             steps {
-                echo "Copying S3 object to EC2..."
-                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} 'aws s3 cp s3://gihansbucket/project.tar.gz .'"
+                echo "Deploying and testing on AWS test instance..."
+                    sh "scp -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ~/.docker/config.json ec2-user@${testip}:~/.docker/config.json"
+                    sh "scp -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem -r Pipeline-docker ec2-user@${testip}:~/Pipeline-docker"
+                    sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${testip} 'docker login && docker pull gihan4/myimage:1.0'"
+                    sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${testip} 'docker run -d -p 80:80 gihan4/myimage:1.0'"
             }
         }
 
-        stage('Testing') {
-            steps {
-                echo "Testing on EC2..."
-                sh """
-                ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} 'tar -xvf project.tar.gz && rm project.tar.gz && /bin/bash /home/ec2-user/deploy.sh && /bin/bash /home/ec2-user/test.sh'
-                """
-            }
-        }
     }
 }
