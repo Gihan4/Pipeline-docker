@@ -51,7 +51,7 @@ pipeline {
                     sh "scp -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ~/.docker/config.json ec2-user@${testip}:~/.docker/config.json"
                     sh "scp -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem -r Pipeline-docker ec2-user@${testip}:~/Pipeline-docker"
                     sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${testip} 'docker login && docker pull gihan4/myimage:1.0'"
-                    sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${testip} 'docker run -d -p 80:80 gihan4/myimage:1.0'"
+                    sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${testip} 'docker run -d -p 5000:5000 gihan4/myimage:1.0'"
             }
         }
 
