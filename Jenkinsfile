@@ -62,13 +62,31 @@ pipeline {
             }
         }
 
-        stage('Deploy and Test on AWS') {
+        stage('Deploy on Test server') {
             steps {
                 echo "Deploying and testing on AWS test instance..."
                     // pulls the Docker image gihan4/myimage:1.0 onto the EC2 instance.
                     sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${testip} 'docker pull gihan4/myimage:1.0'"
                     // execute the docker on port 5000. 
                     sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${testip} 'docker run -d -p 5000:5000 gihan4/myimage:1.0'"
+            }
+        }
+
+        stage('Check Flask API') {
+            steps {
+                echo "Checking Flask API..."
+    
+                // Make an HTTP request to the Flask API endpoint
+                script {
+                    def response = sh script: "curl -s -o /dev/null -w '%{http_code}' http://${testip}:5000/api/endpoint", returnStdout: true
+                    def statusCode = response.trim()
+                    
+                    if (statusCode == '200') {
+                        echo "Flask API is running successfully. Response code: ${statusCode}"
+                    } else {
+                        error "Flask API is not running. Response code: ${statusCode}"
+                    }
+                }
             }
         }
 
