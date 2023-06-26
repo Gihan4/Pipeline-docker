@@ -28,31 +28,47 @@ pipeline {
 
         stage('Stop and Remove Containers and Images') {
             steps {
-                // delete from Jenkins server
+                // Delete from Jenkins server
                 echo "Stopping and removing containers and images on Jenkins server..."
                 sh "docker stop \$(docker ps -aq) || true"
                 sh "docker rm \$(docker ps -aq) || true"
-                sh "docker rmi \$(docker images -q gihan4/myimage) || true"
-
-                
-                // delete from AWS instance
+                sh """
+                    // except for the latest version of the image
+                    docker images --format '{{.Repository}}:{{.Tag}}' gihan4/myimage:* |
+                    awk -F: '{print \$2}' |
+                    sort -r |
+                    tail -n +2 |
+                    xargs -I {} docker rmi gihan4/myimage:{} || true
+                """
+        
+                // Delete from AWS Test instance
                 echo "Stopping and removing containers and images on AWS Test instance..."
                 sh """
                     ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} '
-                    docker stop \$(docker ps -aq) || true &&
-                    docker rm \$(docker ps -aq) || true &&
-                    docker rmi \$(docker images -q gihan4/myimage) || true'
+                        docker stop \$(docker ps -aq) || true &&
+                        docker rm \$(docker ps -aq) || true &&
+                        docker images --format "{{.Repository}}:{{.Tag}}" gihan4/myimage:* |
+                        awk -F: "{print \\\$2}" |
+                        sort -r |
+                        tail -n +2 |
+                        xargs -I {} docker rmi gihan4/myimage:{} || true'
                 """
-
+        
+                // Delete from AWS Production instance
                 echo "Stopping and removing containers and images on AWS Production instance..."
                 sh """
                     ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${prodip} '
-                    docker stop \$(docker ps -aq) || true &&
-                    docker rm \$(docker ps -aq) || true &&
-                    docker rmi \$(docker images -q gihan4/myimage) || true'
+                        docker stop \$(docker ps -aq) || true &&
+                        docker rm \$(docker ps -aq) || true &&
+                        docker images --format "{{.Repository}}:{{.Tag}}" gihan4/myimage:* |
+                        awk -F: "{print \\\$2}" |
+                        sort -r |
+                        tail -n +2 |
+                        xargs -I {} docker rmi gihan4/myimage:{} || true'
                 """
             }
         }
+
 
 
         stage('Install Docker on AWS Instance') {
@@ -91,7 +107,7 @@ pipeline {
             steps {
                 echo "Building Docker image..."
                 dir('Pipeline-docker') {
-                    sh 'docker build -t gihan4/myimage:1.0 .'
+                    sh 'docker build -t gihan4/myimage:${BUILD_NUMBER} .'
                 }
             }
         }
@@ -99,17 +115,17 @@ pipeline {
         stage('Push Image to Docker Hub') {
             steps {
                 echo "Pushing Docker image to Docker Hub..."
-                sh 'docker push gihan4/myimage:1.0'
+                sh 'docker push gihan4/myimage:${BUILD_NUMBER}'
             }
         }
 
         stage('Deploy on Test server') {
             steps {
                 echo "Deploying and testing on AWS test instance..."
-                    // pulls the Docker image gihan4/myimage:1.0 onto the EC2 instance.
-                    sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${testip} 'docker pull gihan4/myimage:1.0'"
+                    // pulls the Docker image gihan4/myimage:${BUILD_NUMBER} onto the EC2 instance.
+                    sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${testip} 'docker pull gihan4/myimage:${BUILD_NUMBER}'"
                     // execute the docker on port 5000. 
-                    sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${testip} 'docker run -d -p 5000:5000 gihan4/myimage:1.0'"
+                    sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${testip} 'docker run -d -p 5000:5000 gihan4/myimage:${BUILD_NUMBER}'"
             }
         }
 
@@ -135,11 +151,11 @@ pipeline {
             steps {
                 echo "Deploying to production..."
 
-                // Pull the Docker image gihan4/myimage:1.0 onto the production instance
-                sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${prodip} 'docker pull gihan4/myimage:1.0'"
+                // Pull the Docker image gihan4/myimage:${BUILD_NUMBER} onto the production instance
+                sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${prodip} 'docker pull gihan4/myimage:${BUILD_NUMBER}'"
 
                 // Execute the Docker image on the production instance
-                sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${prodip} 'docker run -d -p 5000:5000 gihan4/myimage:1.0'"
+                sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${prodip} 'docker run -d -p 5000:5000 gihan4/myimage:${BUILD_NUMBER}'"
             }
         }
 
