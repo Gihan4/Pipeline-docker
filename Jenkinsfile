@@ -19,21 +19,6 @@ pipeline {
                 echo "Cleaning up..."
                 // removes all files and directories in the current working directory 
                 sh 'rm -rf *'
-
-                echo "Removing Docker image..."
-                script {
-                    // checks if the image exists
-                    def imageExists = sh(
-                        script: "docker images -q gihan4/myimage:1.0",
-                        returnStdout: true
-                    ).trim()
-                    // deletes the image if exists
-                    if (!imageExists.empty) {
-                        sh 'docker rmi gihan4/myimage:1.0'
-                    } else {
-                        echo "Image not found. Skipping removal."
-                    }
-                }
             }
         }
 
