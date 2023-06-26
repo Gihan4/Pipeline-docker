@@ -15,8 +15,6 @@ pipeline {
             script: "aws ec2 describe-instances --region eu-central-1 --filters 'Name=tag:Environment,Values=Prod1' --query 'Reservations[].Instances[].PublicIpAddress' --output text",
             returnStdout: true
         ).trim()
-        echo "$prodip"
-        echo "$testip"
     }
 
     stages {
