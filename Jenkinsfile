@@ -36,9 +36,17 @@ pipeline {
 
                 
                 // delete from AWS instance
-                echo "Stopping and removing containers and images on AWS instance..."
+                echo "Stopping and removing containers and images on AWS Test instance..."
                 sh """
                     ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} '
+                    docker stop \$(docker ps -aq) || true &&
+                    docker rm \$(docker ps -aq) || true &&
+                    docker rmi \$(docker images -q gihan4/myimage) || true'
+                """
+
+                echo "Stopping and removing containers and images on AWS Production instance..."
+                sh """
+                    ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${prodip} '
                     docker stop \$(docker ps -aq) || true &&
                     docker rm \$(docker ps -aq) || true &&
                     docker rmi \$(docker images -q gihan4/myimage) || true'
@@ -49,9 +57,19 @@ pipeline {
 
         stage('Install Docker on AWS Instance') {
             steps {
-                echo "Installing Docker on AWS instance..."
+                echo "Installing Docker on AWS test instance..."
                 sh """
                 ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} '
+                    sudo yum update -y &&
+                    sudo yum install -y docker &&
+                    sudo service docker start &&
+                    sudo usermod -aG docker ec2-user
+                '
+                """
+
+                echo "Installing Docker on AWS production instance..."
+                sh """
+                    ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${prodip} '
                     sudo yum update -y &&
                     sudo yum install -y docker &&
                     sudo service docker start &&
@@ -110,6 +128,18 @@ pipeline {
                         error "Flask API is not running. Response code: ${statusCode}"
                     }
                 }
+            }
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                echo "Deploying to production..."
+
+                // Pull the Docker image gihan4/myimage:1.0 onto the production instance
+                sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${prodip} 'docker pull gihan4/myimage:1.0'"
+
+                // Execute the Docker image on the production instance
+                sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${prodip} 'docker run -d -p 5000:5000 gihan4/myimage:1.0'"
             }
         }
 
