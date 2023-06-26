@@ -65,7 +65,7 @@ pipeline {
             steps {
                 echo "Deploying and testing on AWS test instance..."
                     // securely copy the json file from the Jenkins machine to the AWS EC2 instance.
-                    sh "scp -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ~/.docker/config.json ec2-user@${testip}:~/.docker/config.json"
+                    sh "scp -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem /var/lib/jenkins/.docker/config.json ec2-user@${testip}:/var/lib/jenkins/.docker/config.json"
                     // copies the entire Pipeline-docker directory from the Jenkins machine to the AWS EC2 instance using the scp.
                     sh "scp -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem -r Pipeline-docker ec2-user@${testip}:~/Pipeline-docker"
                     // authenticate with Docker Hub and then pulls the Docker image gihan4/myimage:1.0 onto the EC2 instance.
