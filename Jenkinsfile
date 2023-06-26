@@ -25,10 +25,16 @@ pipeline {
         stage('Install Docker on AWS Instance') {
             steps {
                 echo "Installing Docker on AWS instance..."
-                // Install Docker on the AWS instance
-                sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${testip} 'curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh'"
+                // Install Docker using yum
+                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} sudo yum update -y"
+                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} sudo yum install -y docker"
+                // Start the Docker service
+                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} sudo service docker start"
+                // Add the user to the docker group to run Docker without sudo
+                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} sudo usermod -aG docker ec2-user"
             }
         }
+
 
         stage('Clone') {
             steps {
