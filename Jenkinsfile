@@ -32,8 +32,8 @@ pipeline {
                 echo "Stopping and removing containers and images on Jenkins server..."
                 sh "docker stop \$(docker ps -aq) || true"
                 sh "docker rm \$(docker ps -aq) || true"
+                // except for the latest version of the image
                 sh """
-                    // except for the latest version of the image
                     docker images --format '{{.Repository}}:{{.Tag}}' gihan4/myimage:* |
                     awk -F: '{print \$2}' |
                     sort -r |
