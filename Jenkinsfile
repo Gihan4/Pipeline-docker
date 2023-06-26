@@ -18,7 +18,7 @@ pipeline {
             steps {
                 echo "Cleaning up..."
                 // removes all files and directories in the current working directory 
-                sh 'rm -rf /var/lib/jenkins/workspace/*'
+                sh 'rm -rf*'
             }
         }
 
