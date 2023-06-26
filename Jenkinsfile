@@ -22,19 +22,29 @@ pipeline {
             }
         }
 
-        stage('Install Docker on AWS Instance') {
+        stage('Stop and Remove Containers and Images') {
             steps {
-                echo "Installing Docker on AWS instance..."
-                // Install Docker using yum
-                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} sudo yum update -y"
-                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} sudo yum install -y docker"
-                // Start the Docker service
-                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} sudo service docker start"
-                // Add the user to the docker group to run Docker without sudo
-                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} sudo usermod -aG docker ec2-user"
+                echo "Stopping and removing containers and images..."
+                sh "docker stop mycontainer || true"
+                sh "docker rm mycontainer || true"
+                sh "docker rmi gihan4/myimage:1.0 || true"
+                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} 'docker stop mycontainer && docker rm mycontainer && docker rmi gihan4/myimage:1.0 || true'"
             }
         }
 
+        stage('Install Docker on AWS Instance') {
+            steps {
+                echo "Installing Docker on AWS instance..."
+                sh """
+                ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} '
+                    sudo yum update -y &&
+                    sudo yum install -y docker &&
+                    sudo service docker start &&
+                    sudo usermod -aG docker ec2-user
+                '
+                """
+            }
+        }
 
         stage('Clone') {
             steps {
@@ -43,8 +53,6 @@ pipeline {
                 sh 'ls'
             }
         }
-
-        // echo "removing all former images exept latest.." ./images.sh
 
         stage('Build Docker Image') {
             steps {
