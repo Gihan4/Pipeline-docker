@@ -18,7 +18,15 @@ pipeline {
             steps {
                 echo "Cleaning up..."
                 // removes all files and directories in the current working directory 
-                sh 'rm -rf *'
+                sh 'rm -rf /var/lib/jenkins/workspace/*'
+            }
+        }
+
+        stage('Install Docker on AWS Instance') {
+            steps {
+                echo "Installing Docker on AWS instance..."
+                // Install Docker on the AWS instance
+                sh "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/Gihan4.pem ec2-user@${testip} 'curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh'"
             }
         }
 
@@ -29,6 +37,8 @@ pipeline {
                 sh 'ls'
             }
         }
+
+        // echo "removing all former images exept latest.." ./images.sh
 
         stage('Build Docker Image') {
             steps {
