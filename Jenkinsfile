@@ -97,7 +97,7 @@ pipeline {
     
                 // Make an HTTP request to the Flask API endpoint
                 script {
-                    def response = sh script: "curl -s -o /dev/null -w '%{http_code}' http://${testip}:5000/api/endpoint", returnStdout: true
+                    def response = sh script: "curl -s -o /dev/null -w '%{http_code}' http://${testip}:5000", returnStdout: true
                     def statusCode = response.trim()
                     
                     if (statusCode == '200') {
