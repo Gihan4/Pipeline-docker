@@ -28,7 +28,8 @@ pipeline {
                 echo "Stopping and removing containers and images on Jenkins server..."
                 sh "docker stop \$(docker ps -aq) || true"
                 sh "docker rm \$(docker ps -aq) || true"
-                sh "docker rmi gihan4/myimage:1.0 || true"
+                sh "docker rmi $(docker images -q gihan4/myimage) || true"
+
                 
                 // delete from AWS instance
                 echo "Stopping and removing containers and images on AWS instance..."
@@ -36,7 +37,7 @@ pipeline {
                     ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/Gihan4.pem ec2-user@${testip} '
                     docker stop \$(docker ps -aq) || true &&
                     docker rm \$(docker ps -aq) || true &&
-                    docker rmi gihan4/myimage:1.0 || true'
+                    docker rmi $(docker images -q gihan4/myimage) || true'
                 """
             }
         }
